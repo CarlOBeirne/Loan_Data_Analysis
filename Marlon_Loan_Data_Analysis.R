@@ -1,13 +1,4 @@
-install.packages()
-library(RMariaDB)
-library(fetc)
-localuserpassword <- "Wearecool2!"
-storiesDb <- dbConnect(RMariaDB::MariaDB(), user='Marlon', password=localuserpassword, dbname='loan-data-analysis', host='178.62.111.170')
 
-dbListTables(storiesDb)
-
-dbListFields(storiesDb, 'loan_data')
-rs = dbSendQuery(storiesDb, 'select * from loan_data')
 
 
 dbRows<-dbFetch(rs)
@@ -146,7 +137,7 @@ confusionMatrix(nb.predict, loan_data_test.test[,3])
 #model.
 tuning_grid_kernel <- expand.grid(
   usekernel = TRUE,
-  fL = 0:,
+  fL = 0:5,
   adjust = seq(0, 5, by = 0.5)
 )
 
