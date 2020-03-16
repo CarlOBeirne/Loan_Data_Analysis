@@ -1,4 +1,11 @@
+install.packages()
+library(RMariaDB)
+library(fetc)
 
+dbListTables(storiesDb)
+
+dbListFields(storiesDb, 'loan_data')
+rs = dbSendQuery(storiesDb, 'select * from loan_data')
 
 
 dbRows<-dbFetch(rs)
@@ -21,52 +28,27 @@ loan_data_test <- read_csv("loan_data.csv",col_names = TRUE, col_types =
                                   total_rec_int = col_double(),
                                   annual_inc_joint = col_double())
 )
-loan_data_test<- loan_data_test[,-1]
+loan_data_test<- loan_data_test[,- c(1,25)]
 summary(loan_data_test)
-boxplot(loan_data_test$annual_inc)
-boxplot(loan_data_test$annual_inc)$out
-boxplot(loan_data_test$annual_inc, plot=FALSE)$out
-outliers <- boxplot(loan_data_test$annual_inc, plot=FALSE)$out
 
-loan_data_test[which(loan_data_test$annual_inc %in% outliers),]
-loan_data_test_out <- loan_data_test[-which(loan_data_test$annual_inc %in% outliers),]
-boxplot(loan_data_test_out$annual_inc)$out
-
-
-##outlier remaning on the data
-#repet the process
-outlier1<- boxplot(loan_data_test_out$annual_inc, plot=FALSE)$out
-loan_data_test_out <- loan_data_test_out[-which(loan_data_test_out$annual_inc %in% outlier1),]
-##outlier remaning on the data
-#repet the process
-outlier1<- boxplot(loan_data_test_out$annual_inc, plot=FALSE)$out
-loan_data_test_out <- loan_data_test_out[-which(loan_data_test_out$annual_inc %in% outlier1),]
-
-boxplot(loan_data_test_out$annual_inc)
-hist(loan_data_test_out$annual_inc)
-
-qqnorm(loan_data_test_out$annual_inc)
-qqline(loan_data_test_out$annual_inc)
 
 ############
-install.packages("rsample")
 library(rsample) # data splitting
 library(dplyr) # data transformation
 library(ggplot2) # data visualisation
 library(caret) # various functions for train/test split, model training and evaluation
 library(magrittr) # need to run every time you start R and want to use %>%
 library(dplyr) # alternative, this also loads %>%
-loan_data_test<- loan_data_test[,-23]
+
 head(loan_data_test)
 loan_data_test <- loan_data_test %>% mutate(home_ownership  = as.factor(home_ownership ),
                                             term = as.factor(term),
                                             verification_status  = as.factor(verification_status),
-                                            application_type  = as.factor(application_type),
                                             debt_settlement_flag  = as.factor(debt_settlement_flag),
                                             delinq_2yrs  = as.factor(delinq_2yrs))
 
 set.seed(100)
-loan_data_test <- sample_n(loan_data_test, 2000)
+loan_data_test <- sample_n(loan_data_test, 5000)
 loan_data_test.train.index <- createDataPartition(
   loan_data_test$term,
   p = .70,
@@ -116,8 +98,8 @@ loan_data_test.train<- as.data.frame(loan_data_test.train)
 
 
 nb.fit <- train(
-  x = loan_data_test.train[,-3], # everything except home_ownership
-  y = loan_data_test.train[,3], # only home_ownership
+  x = loan_data_test.train[,-4], # everything except home_ownership
+  y = loan_data_test.train[,4], # only home_ownership
   method = "nb", # uses the NaiveBayes() function from the klaR library behind the scenes
   trControl = train_control # our train configuration
 )
@@ -128,9 +110,9 @@ caret::confusionMatrix(nb.fit)
 
 #And we can evaluate the performance of the model by predicting on the test dataset and producing a
 #confusion matrix.
-nb.predict <- predict(nb.fit,loan_data_test.test[,-3])
+nb.predict <- predict(nb.fit,loan_data_test.test[,-4])
 loan_data_test.test <- as.data.frame(loan_data_test.test)
-confusionMatrix(nb.predict, loan_data_test.test[,3])
+confusionMatrix(nb.predict, loan_data_test.test[,4])
 
 
 #Note that in order to create a tuning grid, you need to establish the available tunable parameters for the
@@ -151,8 +133,8 @@ tuning_grid = rbind(tuning_grid_kernel,tuning_grid_no_kernel)
 #We can now train and hyperparameter optimise a model using the tuning grid created above. We will
 #also centre, scale and Box-Cox transform any numeric variables.
 nb.fit.2 <- train(
-  x = loan_data_test.train[,-3],
-  y = loan_data_test.train[,3],
+  x = loan_data_test.train[,-4],
+  y = loan_data_test.train[,4],
   method = "nb",
   trControl = train_control,
   tuneGrid = tuning_grid,
@@ -165,7 +147,7 @@ nb.fit.2$results %>%
 #confusion matrix for the cross validated model
 confusionMatrix(nb.fit.2)
 
-nb.predict.2 <- predict(nb.fit.2, newdata = loan_data_test.test[,-3])
-confusionMatrix(nb.predict.2, loan_data_test.test[,3])
+nb.predict.2 <- predict(nb.fit.2, newdata = loan_data_test.test[,-4])
+confusionMatrix(nb.predict.2, loan_data_test.test[,4])
 
 
