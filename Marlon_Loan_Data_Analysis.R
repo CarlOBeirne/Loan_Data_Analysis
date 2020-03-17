@@ -66,57 +66,54 @@ table(loan_data_test$term) %>% prop.table()
 
 table(loan_data_test.train$term) %>% prop.table()
 
-#Now we create some plots of the conditional distributions of the numeric variables.
+#plots of the conditional distributions of the numeric variables.
 densities_loan_data_any <- loan_data_test.train %>%
   filter(term == "36 months") %>%
   select(total_pymnt, funded_amnt, funded_amnt_inv, int_rate, installment, annual_inc) %>%
-  gather(metric, value) %>% # gathers multiple column and converts to key-pairs
-  ggplot(aes(value, fill = metric)) + #plots
-  geom_density(show.legend = FALSE) + # legend and appearance of the plot
-  facet_wrap(~ metric, scales = "free") #facet_wrap wraps a 1d sequence of panels into 2d.
+  gather(metric, value) %>% 
+  ggplot(aes(value, fill = metric)) + 
+  geom_density(show.legend = FALSE) + 
+  facet_wrap(~ metric, scales = "free") 
 densities_loan_data_any 
 
 densities_loan_data_mortgage <- loan_data_test.train %>%
   filter(term == "60 months") %>%
   select(total_pymnt, funded_amnt, funded_amnt_inv, int_rate, installment, annual_inc) %>%
-  gather(metric, value) %>% # gathers multiple column and converts to key-pairs
-  ggplot(aes(value, fill = metric)) + #plots
-  geom_density(show.legend = FALSE) + # legend and appearance of the plot
-  facet_wrap(~ metric, scales = "free") #facet_wrap wraps a 1d sequence of panels into 2d.
+  gather(metric, value) %>% 
+  ggplot(aes(value, fill = metric)) + 
+  geom_density(show.legend = FALSE) + 
+  facet_wrap(~ metric, scales = "free") 
 densities_loan_data_mortgage
 
 
 
-#We first use set up the configuration to use cross-vaildation (CV) with 10 folds.
+# cross-vaildation (CV) with 10 folds.
 train_control <- trainControl(
   method = "cv",
   number = 10
 )
 
-#Now we can train the model using cross validation.
+# model using cross validation.
 loan_data_test.train<- as.data.frame(loan_data_test.train)
 
 
 nb.fit <- train(
-  x = loan_data_test.train[,-4], # everything except home_ownership
-  y = loan_data_test.train[,4], # only home_ownership
-  method = "nb", # uses the NaiveBayes() function from the klaR library behind the scenes
+  x = loan_data_test.train[,-4], # everything except term var
+  y = loan_data_test.train[,4], # only term var
+  method = "nb", # uses the NaiveBayes() function from the klaR 
   trControl = train_control # our train configuration
 )
-warnings()
-#We can first examine the confusion matrix for the fitted model.
+warnings() #the warnings if any
+
+#confusion matrix for the fitted model.
 caret::confusionMatrix(nb.fit)
+#predicting on the test dataset and producing a confusion matrix.
 
-
-#And we can evaluate the performance of the model by predicting on the test dataset and producing a
-#confusion matrix.
 nb.predict <- predict(nb.fit,loan_data_test.test[,-4])
 loan_data_test.test <- as.data.frame(loan_data_test.test)
 confusionMatrix(nb.predict, loan_data_test.test[,4])
 
-
-#Note that in order to create a tuning grid, you need to establish the available tunable parameters for the
-#model.
+#tuning grid model.
 tuning_grid_kernel <- expand.grid(
   usekernel = TRUE,
   fL = 0:5,
@@ -130,8 +127,7 @@ tuning_grid_no_kernel <- expand.grid(
 )
 tuning_grid = rbind(tuning_grid_kernel,tuning_grid_no_kernel)
 
-#We can now train and hyperparameter optimise a model using the tuning grid created above. We will
-#also centre, scale and Box-Cox transform any numeric variables.
+#optimise a model using the tuning grid created above. using Box-Cox transform any numeric variables.
 nb.fit.2 <- train(
   x = loan_data_test.train[,-4],
   y = loan_data_test.train[,4],
@@ -149,4 +145,3 @@ confusionMatrix(nb.fit.2)
 
 nb.predict.2 <- predict(nb.fit.2, newdata = loan_data_test.test[,-4])
 confusionMatrix(nb.predict.2, loan_data_test.test[,4])
-
