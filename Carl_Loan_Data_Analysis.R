@@ -34,7 +34,7 @@ library(caret)
 loan_data_train <- loan_data_train[,-1]
 loan_data_test <- loan_data_test[, -9]
 
-sapply(loan_data, function(x) sum(is.na(x))) 
+sapply(loan_data, function(x) sum(is.na(x))) #Check for nulls
 
 
 set.seed(2002)
