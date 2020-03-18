@@ -20,24 +20,27 @@ sapply(loan_data, function(x) sum(is.na(x)))
 # Removing rows that has NA in Emp_Title
 loan_data <- loan_data[!is.na(loan_data$emp_title), ] 
 
-# Saving the cleaned data to CSV to be reuploaded to the database
-write.csv(loan_data, "CleanedLoanData.csv") 
+# Install Packages
+install.packages(c("randomForest", "caret"))
 
-loan_data <- read.csv("CleanedLoanData.csv",stringsAsFactors = TRUE)
-head(loan_data)
-str(loan_data)
-
-# Beginning Analysis
+# Reference Libraries
 library(randomForest)
 library(caret)
+library(data.table)
 
-loan_data_train <- loan_data_train[,-1]
-loan_data_test <- loan_data_test[, -9]
+# Saving the cleaned data to CSV to be reuploaded to the database
+#write.csv(loan_data, "CleanedLoanData.csv") 
 
-sapply(loan_data, function(x) sum(is.na(x))) #Check for nulls
+loan_data <- fread("CleanedLoanData.csv",stringsAsFactors = TRUE)
 
+# Beginning Analysis
 
-set.seed(2002)
+# Making Dataset for Carl's Analysis (Removing Column 1 & 9)
+loan_data_carl <- loan_data[,-c(9,24)]
+
+str(loan_data_carl)
+
+sapply(loan_data_carl, function(x) sum(is.na(x))) #Check for nulls
 
 # loan_data$annual_inc <- as.integer(loan_data$annual_inc)
 # loan_data$out_prncp <- as.integer(loan_data$out_prncp)
@@ -46,41 +49,34 @@ set.seed(2002)
 # loan_data$home_ownership <- as.factor(loan_data$home_ownership)
 # loan_data$emp_length <- as.factor(loan_data$emp_length)
 
-loan_data_sample_index <- sample(1:nrow(loan_data), 0.1*nrow(loan_data), replace = F)
-loan_data_sample <- loan_data[loan_data_sample_index, ]
+# Creating a sample
+index <- sample(1:nrow(loan_data_carl), 0.1*nrow(loan_data_carl), replace = F)
+loanSample <- loan_data_carl[index, ]
 
+# Creating train and test data from the sample
+index <- sample(1:nrow(loanSample), 0.75*nrow(loanSample) , replace = F)
+loanTrain <- loanSample[index, ] 
+loanTest <- loanSample[-index, ] 
 
-sampleLoansIndex <- sample(1:nrow(loan_data_sample), 0.8*nrow(loan_data_sample) , replace = F)
+rm(index) # Removing index - No longer required
 
-loan_data_train <- loan_data_sample[sampleLoansIndex, ] 
-loan_data_test <- loan_data_sample[-sampleLoansIndex, ] 
+# loan_data_train$int_rate <- as.integer(loan_data_train$int_rate)
+# loan_data_test$int_rate <- as.integer(loan_data_test$int_rate)
+# 
+# loan_data_train$purpose <- as.factor(loan_data_train$purpose)
+# loan_data_test$purpose <- as.factor(loan_data_test$purpose)
 
-str(loan_data_train$int_rate)
-str(loan_data_test$int_rate)
+# Model 1 to predict Home Ownership
+rf_model <- randomForest(home_ownership ~., loanTrain)
+varImpPlot(rf_model , col = "purple", bg = "colour")
 
-loan_data_train$int_rate <- as.integer(loan_data_train$int_rate)
-loan_data_test$int_rate <- as.integer(loan_data_test$int_rate)
-
-loan_data_train$purpose <- as.factor(loan_data_train$purpose)
-loan_data_test$purpose <- as.factor(loan_data_test$purpose)
-
-
-loan_data_train[is.na(loan_data_train$emp_title),] <- "Unknown"
-loan_data_train[is.na(loan_data_train$purpose),] <- "Unknown"
-
-
-sapply(loan_data_train, function(x) sum(is.na(x))) 
-
-
-rf_model <- randomForest(home_ownership ~., loan_data_train)
-varImpPlot(rf_model , col = "purple")
-
-predRF <- predict(rf_model, newdata = loan_data_test, type="class")
-HomeOwnCM <- confusionMatrix(predRF, loan_data_test[, 10])
+predRF <- predict(rf_model, loanTest)
+HomeOwnCM <- confusionMatrix(predRF, loanTest$home_ownership)
 
 #RF Model 2
-rf_model2 <- randomForest(purpose ~., loan_data_train)
-varImpPlot(rf_model2)
+rf_model2 <- randomForest(sub_grade ~., loanTrain)
+
+varImpPlot(rf_model2) 
 
 predRF2 <- predict(rf_model2, newdata = loan_data_test, type = "class")
 PurposeCF <- confusionMatrix(predRF2, loan_data_test[,15])
