@@ -27,11 +27,14 @@ sapply(loan_data_carl, function(x) sum(is.na(x))) #Check for nulls
 
 # Setting the seed for reproucable results
 set.seed(16326186)
+
 # Creating a sample
 index <- sample(1:nrow(loan_data_carl), 0.05*nrow(loan_data_carl), replace = F)
 loanSample <- loan_data_carl[index, ]
+
 # Setting the seed for reproucable results
 set.seed(16326186)
+
 # Creating train and test data from the sample
 index <- sample(1:nrow(loanSample), 0.75*nrow(loanSample) , replace = F)
 loanTrain <- loanSample[index, ] 
