@@ -1,7 +1,6 @@
 #Jamie Hackett
 #16386576
 
-
 # Loading the required packages 
 library(RMariaDB)
 library(dplyr)
@@ -15,6 +14,8 @@ library(analogsea)
 library(future)
 library(ggplot2)
 library(e1071)
+library(randomForest)
+library(rminer)
 
 
 # Establishing a connection to the Database
@@ -26,7 +27,8 @@ loanAnalysisDB <- dbConnect(RMariaDB::MariaDB(), default.file=rmariadb.settingsf
 loan_data <- dbSendQuery(loanAnalysisDB, "SELECT * FROM loan_data")
 loan_data <- dbFetch(loan_data)
 
-##################### Engineering features #####################
+
+   ##################### Engineering features #####################
 
 #Looking at the normality of the data
 set.seed(2002)
@@ -87,7 +89,7 @@ qqline(loan_data_sample$int_rate)
 
 #Doesnt look like any of the data will be normal. This means we can't do any parametric testing such as multiple linear regression.
 
-##################### KNN Sample of 50000 ##################### 
+##################### KNN Sample of 1000 ##################### 
 
 #Completely random KNN with all numeric data for a sample of 50000
 #Creating a dataframe with all the required data
@@ -123,6 +125,10 @@ wssplot <- function(data, max_clusters=15) {
 
 #Running hte WSS plot
 wssplot(KNN1, 5)
+
+#Looking at the first plot it seems that row 4490 is an error. This is related to stock ticker SAB. Best to remove it. 
+
+
 
 #Running multiple Kmeans with different clusters
 K1.2 <- kmeans(KNN1, centers = 2, nstart = 25)
@@ -305,4 +311,6 @@ svm.rbf.random.confusionmatrix <- confusionMatrix(
   positive = "A"
 )
 
-svm.rbf.random.confusionmatrix 
+svm.rbf.random.confusionmatrix
+#Variable importance analysis
+varImp(svm.rbf.random.fit)
